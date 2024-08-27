@@ -1,0 +1,51 @@
+syntax = "v1"
+
+info (
+	title: "KyokaSuigetsu"
+	desc: "MySQL backup & recovery tool by streaming."
+	author: "poppinzhang"
+	email: "zhangyu960310@gmail.com"
+)
+
+// Backup
+
+// Recovery
+type (
+	RecoveryInfo {
+		ServerVersion string `json:"server_version"`
+		ServerID      int    `json:"server_id"`
+		BinlogDir     string `json:"binlog_dir"`
+	}
+	FakeMasterInfo {
+		User     string `json:"user"`
+		Password string `json:"password"`
+		Port     int    `json:"port"`
+	}
+	// recoveryByTime
+	RecoveryByTimeRequest {
+		Info             RecoveryInfo `json:"info"`
+		RecoverTimestamp int64        `json:"recover_timestamp"`
+	}
+	RecoveryByTimeResponse {
+		Code    int32  `json:"code"`
+		Message string `json:"message"`
+
+		FakeMasterInfo *FakeMasterInfo `json:"fake_master_info"`
+	}
+	// recoveryByGTID
+	RecoveryByGTIDRequest {
+	}
+	RecoveryByGTIDResponse {
+	}
+)
+
+service KyokaSuigetsu {
+	// Bckup
+
+	// Recovery
+	@handler recoveryByTime
+	post /recovery/by_time (RecoveryByTimeRequest) returns (RecoveryByTimeResponse)
+
+	@handler recoveryByGTID
+	post /recovery/by_gtid (RecoveryByGTIDRequest) returns (RecoveryByGTIDResponse)
+}
