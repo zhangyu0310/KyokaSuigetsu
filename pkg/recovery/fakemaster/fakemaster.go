@@ -1,6 +1,7 @@
 package fakemaster
 
 import (
+	"KyokaSuigetsu/pkg/recovery/config"
 	"context"
 	"crypto/tls"
 	"fmt"
@@ -12,21 +13,8 @@ import (
 	"net"
 )
 
-type Config struct {
-	ServerVersion     string
-	ServerID          int
-	ServerPort        int
-	ReplicateUser     string
-	ReplicatePassword string
-
-	BinlogDir string
-
-	UntilTimestamp int64
-	UntilGTID      mysql.UUIDSet
-}
-
 type FakeMaster struct {
-	Config *Config
+	Config *config.Config
 
 	// parser are used to parse sql
 	parser *parser.Parser
@@ -52,8 +40,10 @@ func (fake *FakeMaster) Run() error {
 	}
 	remoteProvider := &RemoteThrottleProvider{server.NewInMemoryProvider(), 10 + 50}
 	remoteProvider.AddUser(fake.Config.ReplicateUser, fake.Config.ReplicatePassword)
+	// FIXME: DON'T USE test_keys in production!!!
 	var tlsConf = server.NewServerTLSConfig(test_keys.CaPem, test_keys.CertPem, test_keys.KeyPem, tls.VerifyClientCertIfGiven)
 
+	// FIXME: Modify loop into a function & go it.
 	for {
 		c, err := l.Accept()
 		if err != nil {
@@ -61,7 +51,7 @@ func (fake *FakeMaster) Run() error {
 			continue
 		}
 		go func() {
-			svr := server.NewServer("8.0.12", mysql.DEFAULT_COLLATION_ID, mysql.AUTH_NATIVE_PASSWORD, test_keys.PubPem, tlsConf)
+			svr := server.NewServer(fake.Config.ServerVersion, mysql.DEFAULT_COLLATION_ID, mysql.AUTH_NATIVE_PASSWORD, test_keys.PubPem, tlsConf)
 			session := NewSession()
 			conn, err := server.NewCustomizedConn(c, svr, remoteProvider, session)
 			if err != nil {

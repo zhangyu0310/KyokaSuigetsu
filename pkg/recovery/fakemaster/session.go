@@ -9,14 +9,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type ReplicateMode uint8
-
-const (
-	ReplicateModeNone      ReplicateMode = iota
-	ReplicateModeBinlogPos               // binlog position
-	ReplicateModeGTID                    // gtid
-)
-
 var (
 	ErrNotRegisterSlave = errors.New("not register slave")
 	ErrBinlogNameEmpty  = errors.New("binlog name empty")
@@ -31,7 +23,6 @@ type Session struct {
 	// For replication.
 	registerSlave bool
 	slaveServerId uint32
-	replicateMode ReplicateMode
 	binlogReader  *binlog.Reader
 
 	log *zap.Logger
@@ -44,7 +35,6 @@ func NewSession() *Session {
 		Variable:      Variables{},
 		registerSlave: false,
 		slaveServerId: 0,
-		replicateMode: 0,
 		binlogReader:  nil,
 		log:           nil,
 	}
@@ -58,7 +48,7 @@ func (h *Session) UseDB(dbName string) error {
 }
 
 // HandleQuery handle COM_QUERY command, like SELECT, INSERT, UPDATE, etc...
-// If Result has a Resultset (SELECT, SHOW, etc...), we will send this as the response, otherwise, we will send Result
+// If Result has a ResultSet (SELECT, SHOW, etc...), we will send this as the response, otherwise, we will send Result
 func (h *Session) HandleQuery(query string) (*mysql.Result, error) {
 	stmt, err := h.fakeMaster.parser.ParseOneStmt(query, "", "")
 	if err != nil {
@@ -138,7 +128,6 @@ func (h *Session) HandleBinlogDump(pos mysql.Position) (*replication.BinlogStrea
 		h.log.Error("Not register slave!")
 		return nil, ErrNotRegisterSlave
 	}
-	h.replicateMode = ReplicateModeBinlogPos
 	if pos.Name == "" {
 		return nil, ErrBinlogNameEmpty
 	} else {
@@ -154,7 +143,6 @@ func (h *Session) HandleBinlogDumpGTID(gtidSet *mysql.MysqlGTIDSet) (*replicatio
 		h.log.Error("Not register slave!")
 		return nil, ErrNotRegisterSlave
 	}
-	h.replicateMode = ReplicateModeGTID
 	h.binlogReader.AutoPosition(gtidSet)
 	return h.binlogReader.Start()
 }

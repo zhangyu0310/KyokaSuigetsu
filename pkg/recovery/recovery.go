@@ -2,6 +2,7 @@ package recovery
 
 import (
 	"KyokaSuigetsu/internal/types"
+	"KyokaSuigetsu/pkg/recovery/config"
 	"KyokaSuigetsu/pkg/recovery/fakemaster"
 	"KyokaSuigetsu/pkg/util"
 	"github.com/go-mysql-org/go-mysql/mysql"
@@ -27,7 +28,7 @@ func (r *Recovery) RegisterNewFakeMaster(info *types.RecoveryInfo) (*types.FakeM
 		return nil, err
 	}
 	fm := &fakemaster.FakeMaster{
-		Config: &fakemaster.Config{
+		Config: &config.Config{
 			ServerVersion:     info.ServerVersion,
 			ServerID:          info.ServerID,
 			BinlogDir:         info.BinlogDir,
